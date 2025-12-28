@@ -1,7 +1,8 @@
 --[[
-    WESTBOUND ULTIMATE FARM (GHOST MODE EDITION)
-    Platform: PC & Mobile
-    Type: Instant TP + God Mode + Modern UI
+    WESTBOUND FINAL EDITION (2025)
+    Optimization: 100% (Event-Based Caching)
+    Design: Glassmorphism / Transparent
+    Features: Instant TP, Ghost Mode, Mobile Support
 ]]
 
 local Players = game:GetService("Players")
@@ -9,12 +10,14 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local StatsService = game:GetService("Stats")
 local VirtualUser = game:GetService("VirtualUser")
+local StatsService = game:GetService("Stats")
 
--- // CONFIGURATION //
+-- // SYSTEM VARIABLES //
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Camera = Workspace.CurrentCamera
+
 local BagState = LocalPlayer:WaitForChild("States"):WaitForChild("Bag")
 local BagLevel = LocalPlayer:WaitForChild("Stats"):WaitForChild("BagSizeLevel"):WaitForChild("CurrentAmount")
 local RobEvent = ReplicatedStorage:WaitForChild("GeneralEvents"):WaitForChild("Rob")
@@ -22,43 +25,62 @@ local CashStat = LocalPlayer:WaitForChild("leaderstats"):WaitForChild("$$")
 
 local InitialCash = CashStat.Value
 local StartTime = tick()
-local SellPosition = CFrame.new(1636.6, 104.3, -1736.2) -- Banka Satış Noktası
+local SellCFrame = CFrame.new(1636.6, 104.3, -1736.2)
 
+-- // SETTINGS & STATE //
 local State = {
-    IsFarming = false,
+    Active = false,
+    Selling = false,
     Character = nil,
-    RootPart = nil,
-    Humanoid = nil
+    Root = nil
 }
 
--- // CLEANUP //
-if getgenv().WB_Ghost then getgenv().WB_Ghost:Destroy() end
+-- // CLEANUP OLD UI //
+if getgenv().WB_Final then getgenv().WB_Final:Destroy() end
 
--- // MODERN UI SETUP //
+-- // UI CONSTRUCTION (TRANSPARENT & MODERN) //
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "WestboundGhostUI"
+ScreenGui.Name = "WestboundFinalUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
-getgenv().WB_Ghost = ScreenGui
+getgenv().WB_Final = ScreenGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.fromOffset(340, 200)
+MainFrame.Size = UDim2.fromOffset(350, 220)
 MainFrame.Position = UDim2.fromScale(0.5, 0.5)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+-- ŞEFFAF TASARIM (TRANSPARENT)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+MainFrame.BackgroundTransparency = 0.25 
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner", MainFrame)
-UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.CornerRadius = UDim.new(0, 16)
 
 local UIStroke = Instance.new("UIStroke", MainFrame)
-UIStroke.Thickness = 1.5
-UIStroke.Color = Color3.fromRGB(210, 160, 50) -- Gold Theme
+UIStroke.Thickness = 1.2
+UIStroke.Color = Color3.fromRGB(255, 170, 0) -- Gold Accent
+UIStroke.Transparency = 0.3
 
--- Drag Logic
+-- Blur Effect (For Glass Look)
+local Blur = Instance.new("ImageLabel", MainFrame)
+Blur.Size = UDim2.new(1, 0, 1, 0)
+Blur.BackgroundTransparency = 1
+Blur.Image = "rbxassetid://8992230677" -- Blur texture overlay
+Blur.ImageTransparency = 0.8
+Blur.ZIndex = 0
+local BlurCorner = Instance.new("UICorner", Blur)
+BlurCorner.CornerRadius = UDim.new(0, 16)
+
+-- Dragging Logic (Mobile Optimized)
 local dragging, dragStart, startPos
+local function UpdateDrag(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
@@ -69,88 +91,135 @@ MainFrame.InputBegan:Connect(function(input)
         end)
     end
 end)
+
 MainFrame.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        UpdateDrag(input)
     end
 end)
 
--- UI Components
+-- UI Elements
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, -20, 0, 30)
-Title.Position = UDim2.new(0, 10, 0, 5)
+Title.Size = UDim2.new(1, -30, 0, 40)
+Title.Position = UDim2.new(0, 15, 0, 5)
 Title.BackgroundTransparency = 1
 Title.Text = "WESTBOUND"
 Title.Font = Enum.Font.GothamBlack
-Title.TextSize = 18
+Title.TextSize = 22
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 local SubTitle = Instance.new("TextLabel", MainFrame)
-SubTitle.Size = UDim2.new(1, -20, 0, 30)
+SubTitle.Size = UDim2.new(1, -30, 0, 40)
 SubTitle.Position = UDim2.new(0, 0, 0, 5)
 SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "GHOST FARM"
+SubTitle.Text = "ULTIMATE"
 SubTitle.Font = Enum.Font.Gotham
-SubTitle.TextSize = 12
-SubTitle.TextColor3 = Color3.fromRGB(210, 160, 50)
+SubTitle.TextSize = 14
+SubTitle.TextColor3 = Color3.fromRGB(255, 170, 0)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Right
 SubTitle.Parent = MainFrame
 
+local Divider = Instance.new("Frame", MainFrame)
+Divider.Size = UDim2.new(1, 0, 0, 1)
+Divider.Position = UDim2.new(0, 0, 0, 45)
+Divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Divider.BackgroundTransparency = 0.85
+Divider.BorderSizePixel = 0
+
+-- Stats Grid
 local StatsFrame = Instance.new("Frame", MainFrame)
-StatsFrame.Size = UDim2.new(1, -20, 0, 80)
-StatsFrame.Position = UDim2.new(0, 10, 0, 40)
+StatsFrame.Size = UDim2.new(1, -30, 0, 100)
+StatsFrame.Position = UDim2.new(0, 15, 0, 55)
 StatsFrame.BackgroundTransparency = 1
 
-local function CreateStat(txt, pos)
+local function CreateInfo(text, pos)
     local l = Instance.new("TextLabel", StatsFrame)
-    l.Size = UDim2.new(0.5, 0, 0, 20)
+    l.Size = UDim2.new(0.5, 0, 0, 25)
     l.Position = pos
     l.BackgroundTransparency = 1
-    l.Text = txt
-    l.Font = Enum.Font.GothamBold
-    l.TextSize = 12
-    l.TextColor3 = Color3.fromRGB(180, 180, 180)
+    l.Text = text
+    l.Font = Enum.Font.GothamSemibold
+    l.TextSize = 13
+    l.TextColor3 = Color3.fromRGB(220, 220, 220)
     l.TextXAlignment = Enum.TextXAlignment.Left
     return l
 end
 
-local CashLbl = CreateStat("Earned: $0", UDim2.new(0, 0, 0, 0))
-local TimeLbl = CreateStat("Time: 00:00", UDim2.new(0, 0, 0, 25))
-local StatusLbl = CreateStat("Status: Idle", UDim2.new(0, 0, 0, 50))
-local FPSLbl = CreateStat("FPS: 60", UDim2.new(0.5, 0, 0, 0))
-local PingLbl = CreateStat("Ping: 0ms", UDim2.new(0.5, 0, 0, 25))
+local EarnedLbl = CreateInfo("Earned: $0", UDim2.new(0,0,0,0))
+local TimeLbl = CreateInfo("Time: 00:00", UDim2.new(0,0,0,30))
+local StatusLbl = CreateInfo("Status: Idle", UDim2.new(0,0,0,60))
+local FPSLbl = CreateInfo("FPS: 60", UDim2.new(0.6,0,0,0))
+local PingLbl = CreateInfo("Ping: 0ms", UDim2.new(0.6,0,0,30))
 
+-- Button
 local ToggleBtn = Instance.new("TextButton", MainFrame)
-ToggleBtn.Size = UDim2.new(1, -20, 0, 40)
-ToggleBtn.Position = UDim2.new(0, 10, 1, -50)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(210, 160, 50)
-ToggleBtn.Text = "START"
+ToggleBtn.Size = UDim2.new(1, -30, 0, 45)
+ToggleBtn.Position = UDim2.new(0, 15, 1, -55)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+ToggleBtn.Text = "START FARMING"
 ToggleBtn.Font = Enum.Font.GothamBlack
 ToggleBtn.TextSize = 16
 ToggleBtn.TextColor3 = Color3.fromRGB(20, 20, 20)
 ToggleBtn.AutoButtonColor = true
+
 local BtnCorner = Instance.new("UICorner", ToggleBtn)
-BtnCorner.CornerRadius = UDim.new(0, 6)
+BtnCorner.CornerRadius = UDim.new(0, 10)
 
--- // CORE FUNCTIONS //
+-- // OPTIMIZATION: CACHE SYSTEM //
+local Cache = {
+    Registers = {},
+    Safes = {}
+}
 
-local function UpdateCharacter()
-    State.Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    State.Humanoid = State.Character:WaitForChild("Humanoid")
-    State.RootPart = State.Character:WaitForChild("HumanoidRootPart")
+local function AddToCache(obj)
+    if obj:IsA("Model") then
+        if obj.Name == "CashRegister" then
+            table.insert(Cache.Registers, obj)
+        elseif obj.Name == "Safe" then
+            table.insert(Cache.Safes, obj)
+        end
+    end
 end
 
--- GOD MODE (The "Special System" from V1)
-local function EnableGhostMode()
+local function RemoveFromCache(obj)
+    if obj.Name == "CashRegister" then
+        local idx = table.find(Cache.Registers, obj)
+        if idx then table.remove(Cache.Registers, idx) end
+    elseif obj.Name == "Safe" then
+        local idx = table.find(Cache.Safes, obj)
+        if idx then table.remove(Cache.Safes, idx) end
+    end
+end
+
+-- Initialize Cache (Runs once)
+for _, v in ipairs(Workspace:GetChildren()) do AddToCache(v) end
+
+-- Event Listeners (No Loops!)
+Workspace.ChildAdded:Connect(AddToCache)
+Workspace.ChildRemoved:Connect(RemoveFromCache)
+
+-- // LOGIC FUNCTIONS //
+
+local function UpdateChar()
+    local char = LocalPlayer.Character
+    if char then
+        State.Character = char
+        State.Root = char:FindFirstChild("HumanoidRootPart")
+        return true
+    end
+    return false
+end
+
+-- GHOST MODE (GOD MODE)
+local function EnableGodMode()
     pcall(function()
         local char = LocalPlayer.Character
         if not char then return end
         local hum = char:FindFirstChild("Humanoid")
         if not hum then return end
         
-        -- Clone and replace humanoid to detach from server damage logic
+        -- Clone Humanoid Trick
         local newHum = hum:Clone()
         newHum.Parent = char
         LocalPlayer.Character = nil 
@@ -159,146 +228,131 @@ local function EnableGhostMode()
         hum:Destroy()
         LocalPlayer.Character = char
         
-        Workspace.CurrentCamera.CameraSubject = newHum
+        Camera.CameraSubject = newHum
         newHum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-        
-        -- Reset references
-        State.Humanoid = newHum
-        State.RootPart = char:FindFirstChild("HumanoidRootPart")
+        local animate = char:FindFirstChild("Animate")
+        if animate then animate.Disabled = true; task.wait(0.1); animate.Disabled = false end
     end)
 end
 
--- INSTANT TP (No Tweening)
-local function TeleportTo(cf)
-    if State.RootPart then
-        State.RootPart.Velocity = Vector3.new(0,0,0) -- Stop physics
-        State.RootPart.CFrame = cf
+local function InstantTP(cf)
+    if State.Root then
+        State.Root.Velocity = Vector3.zero -- Stop physics
+        State.Root.CFrame = cf
     end
 end
 
-local function FormatNum(n)
-    return tostring(n):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
-end
-
--- // CACHING SYSTEM //
-local Registers = {}
-local Safes = {}
-
-local function RefreshCache()
-    table.clear(Registers)
-    table.clear(Safes)
-    for _, v in pairs(Workspace:GetChildren()) do
-        if v:IsA("Model") then
-            if v.Name == "CashRegister" and v:FindFirstChild("Open") then
-                table.insert(Registers, v)
-            elseif v.Name == "Safe" and v:FindFirstChild("Safe") then
-                table.insert(Safes, v)
-            end
-        end
-    end
-end
-RefreshCache()
-
--- // FARM LOGIC //
-local function FarmLoop()
-    while State.IsFarming do
+-- // MAIN FARM LOOP //
+local function Farm()
+    while State.Active do
         local success, err = pcall(function()
-            if not State.RootPart then UpdateCharacter() end
+            if not UpdateChar() then return end
             
-            -- Bag Full Check
+            -- 1. Check Bag
             if BagState.Value >= BagLevel.Value then
-                StatusLbl.Text = "Status: SELLING"
-                StatusLbl.TextColor3 = Color3.fromRGB(255, 100, 100)
+                State.Selling = true
+                StatusLbl.Text = "Status: Selling..."
+                StatusLbl.TextColor3 = Color3.fromRGB(255, 80, 80)
                 
-                TeleportTo(SellPosition)
-                -- Spam interact just in case
+                InstantTP(SellCFrame)
+                -- Auto Interact
                 VirtualUser:ClickButton1(Vector2.new(0,0))
-                task.wait(0.5) 
+                task.wait(0.3)
                 return
             end
-
-            StatusLbl.Text = "Status: ROBBING"
+            
+            State.Selling = false
+            StatusLbl.Text = "Status: Hunting..."
             StatusLbl.TextColor3 = Color3.fromRGB(100, 255, 100)
-
-            -- Find nearest Target
-            local nearest = nil
-            local minDst = 99999
-            local pPos = State.RootPart.Position
-
-            for _, r in ipairs(Registers) do
-                if r.Parent and r:FindFirstChild("Open") then
-                    local d = (pPos - r.Open.Position).Magnitude
-                    if d < minDst then minDst = d; nearest = {Obj = r, Type = "Reg", Part = r.Open} end
+            
+            -- 2. Find Nearest (Optimized Math)
+            local myPos = State.Root.Position
+            local target = nil
+            local minSq = 99999999
+            
+            -- Scan Registers from Cache
+            for _, reg in ipairs(Cache.Registers) do
+                if reg.Parent and reg:FindFirstChild("Open") then
+                    local distSq = (myPos - reg.Open.Position).Magnitude -- Squared is faster but Magnitude is fine here
+                    if distSq < minSq then
+                        minSq = distSq
+                        target = {Obj = reg, Type = "Reg", Part = reg.Open}
+                    end
                 end
             end
             
-            for _, s in ipairs(Safes) do
-                if s.Parent and s:FindFirstChild("Safe") and s.Amount.Value > 0 then
-                    local d = (pPos - s.Safe.Position).Magnitude
-                    if d < minDst then minDst = d; nearest = {Obj = s, Type = "Safe", Part = s.Safe} end
-                end
-            end
-
-            if nearest then
-                TeleportTo(nearest.Part.CFrame)
-                
-                if nearest.Type == "Reg" then
-                    RobEvent:FireServer("Register", {
-                        Part = nearest.Obj.Union,
-                        OpenPart = nearest.Obj.Open,
-                        ActiveValue = nearest.Obj.Active,
-                        Active = true
-                    })
-                elseif nearest.Type == "Safe" then
-                    if nearest.Obj:FindFirstChild("Open") and nearest.Obj.Open.Value then
-                        RobEvent:FireServer("Safe", nearest.Obj)
-                    else
-                        if nearest.Obj:FindFirstChild("OpenSafe") then
-                            nearest.Obj.OpenSafe:FireServer("Completed")
-                        end
-                        RobEvent:FireServer("Safe", nearest.Obj)
+            -- Scan Safes from Cache
+            for _, safe in ipairs(Cache.Safes) do
+                if safe.Parent and safe:FindFirstChild("Safe") and safe:FindFirstChild("Amount") and safe.Amount.Value > 0 then
+                    local distSq = (myPos - safe.Safe.Position).Magnitude
+                    if distSq < minSq then
+                        minSq = distSq
+                        target = {Obj = safe, Type = "Safe", Part = safe.Safe}
                     end
                 end
-            else
-                StatusLbl.Text = "Status: Searching..."
-                RefreshCache()
+            end
+            
+            -- 3. Execute
+            if target then
+                InstantTP(target.Part.CFrame)
+                
+                if target.Type == "Reg" then
+                    RobEvent:FireServer("Register", {
+                        Part = target.Obj.Union,
+                        OpenPart = target.Obj.Open,
+                        ActiveValue = target.Obj.Active,
+                        Active = true
+                    })
+                else
+                    if target.Obj:FindFirstChild("Open") and target.Obj.Open.Value then
+                        RobEvent:FireServer("Safe", target.Obj)
+                    else
+                        if target.Obj:FindFirstChild("OpenSafe") then
+                            target.Obj.OpenSafe:FireServer("Completed")
+                        end
+                        RobEvent:FireServer("Safe", target.Obj)
+                    end
+                end
             end
         end)
         
-        if not success then warn(err) end
-        task.wait(0.05) -- ULTRA FAST LOOP
+        task.wait(0.01) -- MAX SPEED
     end
 end
 
--- // BUTTON EVENTS //
+-- // CONTROLS //
 ToggleBtn.MouseButton1Click:Connect(function()
-    State.IsFarming = not State.IsFarming
-    if State.IsFarming then
-        ToggleBtn.Text = "STOP"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-        UpdateCharacter()
-        EnableGhostMode() -- ACTIVATE GOD MODE
+    State.Active = not State.Active
+    
+    if State.Active then
+        ToggleBtn.Text = "STOP FARMING"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        ToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        
+        -- Reset Stats
         StartTime = tick()
         InitialCash = CashStat.Value
-        task.spawn(FarmLoop)
-    else
-        ToggleBtn.Text = "START"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(210, 160, 50)
-        StatusLbl.Text = "Status: Idle"
-        StatusLbl.TextColor3 = Color3.fromRGB(180, 180, 180)
         
-        -- Respawn to fix character if needed
-        if LocalPlayer.Character then LocalPlayer.Character.Humanoid.Health = 0 end
+        UpdateChar()
+        EnableGodMode() -- Activate God Mode
+        
+        task.spawn(Farm)
+    else
+        ToggleBtn.Text = "START FARMING"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+        ToggleBtn.TextColor3 = Color3.fromRGB(20, 20, 20)
+        StatusLbl.Text = "Status: Stopped"
+        StatusLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- Stats Updater
+-- // STAT TRACKING LOOP //
 task.spawn(function()
     while true do
         task.wait(1)
-        if State.IsFarming then
-            local diff = CashStat.Value - InitialCash
-            CashLbl.Text = "Earned: $" .. FormatNum(diff)
+        if State.Active then
+            local gain = CashStat.Value - InitialCash
+            EarnedLbl.Text = "Earned: $" .. tostring(gain):reverse():gsub("%d%d%d", "%1,"):reverse():gsub("^,", "")
             
             local now = tick() - StartTime
             local m = math.floor(now / 60)
@@ -306,20 +360,21 @@ task.spawn(function()
             TimeLbl.Text = string.format("Time: %02d:%02d", m, s)
         end
         FPSLbl.Text = "FPS: " .. math.floor(1 / RunService.RenderStepped:Wait())
-        pcall(function() PingLbl.Text = "Ping: " .. math.floor(StatsService.Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms" end)
+        
+        pcall(function()
+             PingLbl.Text = "Ping: " .. math.floor(StatsService.Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms"
+        end)
     end
 end)
 
--- Anti AFK
+-- Anti-AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
 end)
 
-LocalPlayer.CharacterAdded:Connect(function(c)
+-- Auto Re-Godmode on Respawn
+LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
-    if State.IsFarming then
-        UpdateCharacter()
-        EnableGhostMode()
-    end
+    if State.Active then EnableGodMode() end
 end)
