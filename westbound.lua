@@ -213,7 +213,7 @@ end
 
 local function InstantTP(cf)
     if State.Root then
-        State.Root.Velocity = Vector3.zero 
+        State.Root.Velocity = Vector3.zero
         State.Root.CFrame = cf
     end
 end
@@ -244,7 +244,7 @@ local function Farm()
             
             for _, reg in ipairs(Cache.Registers) do
                 if reg.Parent and reg:FindFirstChild("Open") then
-                    local distSq = (myPos - reg.Open.Position).Magnitude 
+                    local distSq = (myPos - reg.Open.Position).Magnitude
                     if distSq < minSq then
                         minSq = distSq
                         target = {Obj = reg, Type = "Reg", Part = reg.Open}
