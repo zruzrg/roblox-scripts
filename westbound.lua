@@ -1,10 +1,3 @@
---[[
-    WESTBOUND FINAL EDITION (2025)
-    Optimization: 100% (Event-Based Caching)
-    Design: Glassmorphism / Transparent
-    Features: Instant TP, Ghost Mode, Mobile Support
-]]
-
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,7 +6,6 @@ local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
 local StatsService = game:GetService("Stats")
 
--- // SYSTEM VARIABLES //
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = Workspace.CurrentCamera
@@ -27,7 +19,6 @@ local InitialCash = CashStat.Value
 local StartTime = tick()
 local SellCFrame = CFrame.new(1636.6, 104.3, -1736.2)
 
--- // SETTINGS & STATE //
 local State = {
     Active = false,
     Selling = false,
@@ -35,10 +26,8 @@ local State = {
     Root = nil
 }
 
--- // CLEANUP OLD UI //
 if getgenv().WB_Final then getgenv().WB_Final:Destroy() end
 
--- // UI CONSTRUCTION (TRANSPARENT & MODERN) //
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "WestboundFinalUI"
 ScreenGui.ResetOnSpawn = false
@@ -50,7 +39,6 @@ MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.fromOffset(350, 220)
 MainFrame.Position = UDim2.fromScale(0.5, 0.5)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
--- ŞEFFAF TASARIM (TRANSPARENT)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 MainFrame.BackgroundTransparency = 0.25 
 MainFrame.BorderSizePixel = 0
@@ -61,20 +49,18 @@ UICorner.CornerRadius = UDim.new(0, 16)
 
 local UIStroke = Instance.new("UIStroke", MainFrame)
 UIStroke.Thickness = 1.2
-UIStroke.Color = Color3.fromRGB(255, 170, 0) -- Gold Accent
+UIStroke.Color = Color3.fromRGB(255, 170, 0)
 UIStroke.Transparency = 0.3
 
--- Blur Effect (For Glass Look)
 local Blur = Instance.new("ImageLabel", MainFrame)
 Blur.Size = UDim2.new(1, 0, 1, 0)
 Blur.BackgroundTransparency = 1
-Blur.Image = "rbxassetid://8992230677" -- Blur texture overlay
+Blur.Image = "rbxassetid://8992230677"
 Blur.ImageTransparency = 0.8
 Blur.ZIndex = 0
 local BlurCorner = Instance.new("UICorner", Blur)
 BlurCorner.CornerRadius = UDim.new(0, 16)
 
--- Dragging Logic (Mobile Optimized)
 local dragging, dragStart, startPos
 local function UpdateDrag(input)
     local delta = input.Position - dragStart
@@ -98,7 +84,6 @@ MainFrame.InputChanged:Connect(function(input)
     end
 end)
 
--- UI Elements
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, -30, 0, 40)
 Title.Position = UDim2.new(0, 15, 0, 5)
@@ -127,7 +112,6 @@ Divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 Divider.BackgroundTransparency = 0.85
 Divider.BorderSizePixel = 0
 
--- Stats Grid
 local StatsFrame = Instance.new("Frame", MainFrame)
 StatsFrame.Size = UDim2.new(1, -30, 0, 100)
 StatsFrame.Position = UDim2.new(0, 15, 0, 55)
@@ -152,7 +136,6 @@ local StatusLbl = CreateInfo("Status: Idle", UDim2.new(0,0,0,60))
 local FPSLbl = CreateInfo("FPS: 60", UDim2.new(0.6,0,0,0))
 local PingLbl = CreateInfo("Ping: 0ms", UDim2.new(0.6,0,0,30))
 
--- Button
 local ToggleBtn = Instance.new("TextButton", MainFrame)
 ToggleBtn.Size = UDim2.new(1, -30, 0, 45)
 ToggleBtn.Position = UDim2.new(0, 15, 1, -55)
@@ -166,7 +149,6 @@ ToggleBtn.AutoButtonColor = true
 local BtnCorner = Instance.new("UICorner", ToggleBtn)
 BtnCorner.CornerRadius = UDim.new(0, 10)
 
--- // OPTIMIZATION: CACHE SYSTEM //
 local Cache = {
     Registers = {},
     Safes = {}
@@ -192,14 +174,10 @@ local function RemoveFromCache(obj)
     end
 end
 
--- Initialize Cache (Runs once)
 for _, v in ipairs(Workspace:GetChildren()) do AddToCache(v) end
 
--- Event Listeners (No Loops!)
 Workspace.ChildAdded:Connect(AddToCache)
 Workspace.ChildRemoved:Connect(RemoveFromCache)
-
--- // LOGIC FUNCTIONS //
 
 local function UpdateChar()
     local char = LocalPlayer.Character
@@ -211,7 +189,6 @@ local function UpdateChar()
     return false
 end
 
--- GHOST MODE (GOD MODE)
 local function EnableGodMode()
     pcall(function()
         local char = LocalPlayer.Character
@@ -219,7 +196,6 @@ local function EnableGodMode()
         local hum = char:FindFirstChild("Humanoid")
         if not hum then return end
         
-        -- Clone Humanoid Trick
         local newHum = hum:Clone()
         newHum.Parent = char
         LocalPlayer.Character = nil 
@@ -237,25 +213,22 @@ end
 
 local function InstantTP(cf)
     if State.Root then
-        State.Root.Velocity = Vector3.zero -- Stop physics
+        State.Root.Velocity = Vector3.zero 
         State.Root.CFrame = cf
     end
 end
 
--- // MAIN FARM LOOP //
 local function Farm()
     while State.Active do
         local success, err = pcall(function()
             if not UpdateChar() then return end
             
-            -- 1. Check Bag
             if BagState.Value >= BagLevel.Value then
                 State.Selling = true
                 StatusLbl.Text = "Status: Selling..."
                 StatusLbl.TextColor3 = Color3.fromRGB(255, 80, 80)
                 
                 InstantTP(SellCFrame)
-                -- Auto Interact
                 VirtualUser:ClickButton1(Vector2.new(0,0))
                 task.wait(0.3)
                 return
@@ -265,15 +238,13 @@ local function Farm()
             StatusLbl.Text = "Status: Hunting..."
             StatusLbl.TextColor3 = Color3.fromRGB(100, 255, 100)
             
-            -- 2. Find Nearest (Optimized Math)
             local myPos = State.Root.Position
             local target = nil
             local minSq = 99999999
             
-            -- Scan Registers from Cache
             for _, reg in ipairs(Cache.Registers) do
                 if reg.Parent and reg:FindFirstChild("Open") then
-                    local distSq = (myPos - reg.Open.Position).Magnitude -- Squared is faster but Magnitude is fine here
+                    local distSq = (myPos - reg.Open.Position).Magnitude 
                     if distSq < minSq then
                         minSq = distSq
                         target = {Obj = reg, Type = "Reg", Part = reg.Open}
@@ -281,7 +252,6 @@ local function Farm()
                 end
             end
             
-            -- Scan Safes from Cache
             for _, safe in ipairs(Cache.Safes) do
                 if safe.Parent and safe:FindFirstChild("Safe") and safe:FindFirstChild("Amount") and safe.Amount.Value > 0 then
                     local distSq = (myPos - safe.Safe.Position).Magnitude
@@ -292,7 +262,6 @@ local function Farm()
                 end
             end
             
-            -- 3. Execute
             if target then
                 InstantTP(target.Part.CFrame)
                 
@@ -316,11 +285,10 @@ local function Farm()
             end
         end)
         
-        task.wait(0.01) -- MAX SPEED
+        task.wait(0.01)
     end
 end
 
--- // CONTROLS //
 ToggleBtn.MouseButton1Click:Connect(function()
     State.Active = not State.Active
     
@@ -329,12 +297,11 @@ ToggleBtn.MouseButton1Click:Connect(function()
         ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
         ToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
         
-        -- Reset Stats
         StartTime = tick()
         InitialCash = CashStat.Value
         
         UpdateChar()
-        EnableGodMode() -- Activate God Mode
+        EnableGodMode()
         
         task.spawn(Farm)
     else
@@ -346,7 +313,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- // STAT TRACKING LOOP //
 task.spawn(function()
     while true do
         task.wait(1)
@@ -367,13 +333,11 @@ task.spawn(function()
     end
 end)
 
--- Anti-AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
 end)
 
--- Auto Re-Godmode on Respawn
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
     if State.Active then EnableGodMode() end
