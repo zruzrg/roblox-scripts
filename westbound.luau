@@ -1,25 +1,41 @@
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local VirtualUser = game:GetService("VirtualUser")
-local StatsService = game:GetService("Stats")
+local Players: Players = game:GetService("Players")local Workspace: Workspace = game:GetService("Workspace")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService: RunService = game:GetService("RunService")
+local CoreGui: CoreGui = game:GetService("CoreGui")
+local VirtualUser: VirtualUser = game:GetService("VirtualUser")
+local StatsService: Stats = game:GetService("Stats")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local Camera = Workspace.CurrentCamera
+type FarmState = {
+    Active: boolean,
+    Selling: boolean,
+    Character: Model?,
+    Root: BasePart?
+}
 
-local BagState = LocalPlayer:WaitForChild("States"):WaitForChild("Bag")
-local BagLevel = LocalPlayer:WaitForChild("Stats"):WaitForChild("BagSizeLevel"):WaitForChild("CurrentAmount")
-local RobEvent = ReplicatedStorage:WaitForChild("GeneralEvents"):WaitForChild("Rob")
-local CashStat = LocalPlayer:WaitForChild("leaderstats"):WaitForChild("$$")
+type CacheData = {
+    Registers: {Model},
+    Safes: {Model}
+}
 
-local InitialCash = CashStat.Value
-local StartTime = tick()
-local SellCFrame = CFrame.new(1636.6, 104.3, -1736.2)
+type TargetData = {
+    Obj: Model,
+    Type: "Reg" | "Safe",
+    Part: BasePart
+}
 
-local State = {
+local LocalPlayer: Player = Players.LocalPlayer
+local Camera: Camera = Workspace.CurrentCamera
+
+local BagState: NumberValue = LocalPlayer:WaitForChild("States"):WaitForChild("Bag")
+local BagLevel: IntValue = LocalPlayer:WaitForChild("Stats"):WaitForChild("BagSizeLevel"):WaitForChild("CurrentAmount")
+local RobEvent: RemoteEvent = ReplicatedStorage:WaitForChild("GeneralEvents"):WaitForChild("Rob")
+local CashStat: IntValue = LocalPlayer:WaitForChild("leaderstats"):WaitForChild("$$")
+
+local InitialCash: number = CashStat.Value
+local StartTime: number = tick()
+local SellCFrame: CFrame = CFrame.new(1636.6, 104.3, -1736.2)
+
+local State: FarmState = {
     Active = false,
     Selling = false,
     Character = nil,
@@ -28,13 +44,13 @@ local State = {
 
 if getgenv().WB_Final then getgenv().WB_Final:Destroy() end
 
-local ScreenGui = Instance.new("ScreenGui")
+local ScreenGui: ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "WestboundFinalUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
 getgenv().WB_Final = ScreenGui
 
-local MainFrame = Instance.new("Frame")
+local MainFrame: Frame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.fromOffset(350, 220)
 MainFrame.Position = UDim2.fromScale(0.5, 0.5)
@@ -44,30 +60,35 @@ MainFrame.BackgroundTransparency = 0.25
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
-local UICorner = Instance.new("UICorner", MainFrame)
+local UICorner: UICorner = Instance.new("UICorner", MainFrame)
 UICorner.CornerRadius = UDim.new(0, 16)
 
-local UIStroke = Instance.new("UIStroke", MainFrame)
+local UIStroke: UIStroke = Instance.new("UIStroke", MainFrame)
 UIStroke.Thickness = 1.2
 UIStroke.Color = Color3.fromRGB(255, 170, 0)
 UIStroke.Transparency = 0.3
 
-local Blur = Instance.new("ImageLabel", MainFrame)
-Blur.Size = UDim2.new(1, 0, 1, 0)
+local Blur: ImageLabel = Instance.new("ImageLabel", MainFrame)
+Blur.Size = UDim2.fromScale(1, 1)
 Blur.BackgroundTransparency = 1
 Blur.Image = "rbxassetid://8992230677"
 Blur.ImageTransparency = 0.8
 Blur.ZIndex = 0
-local BlurCorner = Instance.new("UICorner", Blur)
+local BlurCorner: UICorner = Instance.new("UICorner", Blur)
 BlurCorner.CornerRadius = UDim.new(0, 16)
 
-local dragging, dragStart, startPos
-local function UpdateDrag(input)
-    local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+local dragging: boolean, dragStart: Vector3, startPos: UDim2
+local function UpdateDrag(input: InputObject)
+    local delta: Vector3 = input.Position - dragStart
+    MainFrame.Position = UDim2.new(
+        startPos.X.Scale, 
+        startPos.X.Offset + delta.X, 
+        startPos.Y.Scale, 
+        startPos.Y.Offset + delta.Y
+    )
 end
 
-MainFrame.InputBegan:Connect(function(input)
+MainFrame.InputBegan:Connect(function(input: InputObject)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
@@ -78,13 +99,13 @@ MainFrame.InputBegan:Connect(function(input)
     end
 end)
 
-MainFrame.InputChanged:Connect(function(input)
+MainFrame.InputChanged:Connect(function(input: InputObject)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         UpdateDrag(input)
     end
 end)
 
-local Title = Instance.new("TextLabel", MainFrame)
+local Title: TextLabel = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, -30, 0, 40)
 Title.Position = UDim2.new(0, 15, 0, 5)
 Title.BackgroundTransparency = 1
@@ -94,31 +115,31 @@ Title.TextSize = 22
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
-local SubTitle = Instance.new("TextLabel", MainFrame)
+local SubTitle: TextLabel = Instance.new("TextLabel", MainFrame)
 SubTitle.Size = UDim2.new(1, -30, 0, 40)
 SubTitle.Position = UDim2.new(0, 0, 0, 5)
 SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "ULTIMATE"
+SubTitle.Text = "ULTIMATE LUAU"
 SubTitle.Font = Enum.Font.Gotham
 SubTitle.TextSize = 14
 SubTitle.TextColor3 = Color3.fromRGB(255, 170, 0)
 SubTitle.TextXAlignment = Enum.TextXAlignment.Right
 SubTitle.Parent = MainFrame
 
-local Divider = Instance.new("Frame", MainFrame)
+local Divider: Frame = Instance.new("Frame", MainFrame)
 Divider.Size = UDim2.new(1, 0, 0, 1)
 Divider.Position = UDim2.new(0, 0, 0, 45)
 Divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 Divider.BackgroundTransparency = 0.85
 Divider.BorderSizePixel = 0
 
-local StatsFrame = Instance.new("Frame", MainFrame)
+local StatsFrame: Frame = Instance.new("Frame", MainFrame)
 StatsFrame.Size = UDim2.new(1, -30, 0, 100)
 StatsFrame.Position = UDim2.new(0, 15, 0, 55)
 StatsFrame.BackgroundTransparency = 1
 
-local function CreateInfo(text, pos)
-    local l = Instance.new("TextLabel", StatsFrame)
+local function CreateInfo(text: string, pos: UDim2): TextLabel
+    local l: TextLabel = Instance.new("TextLabel", StatsFrame)
     l.Size = UDim2.new(0.5, 0, 0, 25)
     l.Position = pos
     l.BackgroundTransparency = 1
@@ -130,13 +151,13 @@ local function CreateInfo(text, pos)
     return l
 end
 
-local EarnedLbl = CreateInfo("Earned: $0", UDim2.new(0,0,0,0))
-local TimeLbl = CreateInfo("Time: 00:00", UDim2.new(0,0,0,30))
-local StatusLbl = CreateInfo("Status: Idle", UDim2.new(0,0,0,60))
-local FPSLbl = CreateInfo("FPS: 60", UDim2.new(0.6,0,0,0))
-local PingLbl = CreateInfo("Ping: 0ms", UDim2.new(0.6,0,0,30))
+local EarnedLbl: TextLabel = CreateInfo("Earned: $0", UDim2.new(0,0,0,0))
+local TimeLbl: TextLabel = CreateInfo("Time: 00:00", UDim2.new(0,0,0,30))
+local StatusLbl: TextLabel = CreateInfo("Status: Idle", UDim2.new(0,0,0,60))
+local FPSLbl: TextLabel = CreateInfo("FPS: 60", UDim2.new(0.6,0,0,0))
+local PingLbl: TextLabel = CreateInfo("Ping: 0ms", UDim2.new(0.6,0,0,30))
 
-local ToggleBtn = Instance.new("TextButton", MainFrame)
+local ToggleBtn: TextButton = Instance.new("TextButton", MainFrame)
 ToggleBtn.Size = UDim2.new(1, -30, 0, 45)
 ToggleBtn.Position = UDim2.new(0, 15, 1, -55)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
@@ -146,25 +167,24 @@ ToggleBtn.TextSize = 16
 ToggleBtn.TextColor3 = Color3.fromRGB(20, 20, 20)
 ToggleBtn.AutoButtonColor = true
 
-local BtnCorner = Instance.new("UICorner", ToggleBtn)
+local BtnCorner: UICorner = Instance.new("UICorner", ToggleBtn)
 BtnCorner.CornerRadius = UDim.new(0, 10)
 
-local Cache = {
+local Cache: CacheData = {
     Registers = {},
     Safes = {}
 }
 
-local function AddToCache(obj)
-    if obj:IsA("Model") then
-        if obj.Name == "CashRegister" then
-            table.insert(Cache.Registers, obj)
-        elseif obj.Name == "Safe" then
-            table.insert(Cache.Safes, obj)
-        end
+local function AddToCache(obj: Instance)
+    if not obj:IsA("Model") then return end
+    if obj.Name == "CashRegister" then
+        table.insert(Cache.Registers, obj)
+    elseif obj.Name == "Safe" then
+        table.insert(Cache.Safes, obj)
     end
 end
 
-local function RemoveFromCache(obj)
+local function RemoveFromCache(obj: Instance)
     if obj.Name == "CashRegister" then
         local idx = table.find(Cache.Registers, obj)
         if idx then table.remove(Cache.Registers, idx) end
@@ -174,12 +194,12 @@ local function RemoveFromCache(obj)
     end
 end
 
-for _, v in ipairs(Workspace:GetChildren()) do AddToCache(v) end
+for _, v in Workspace:GetChildren() do AddToCache(v) end
 
 Workspace.ChildAdded:Connect(AddToCache)
 Workspace.ChildRemoved:Connect(RemoveFromCache)
 
-local function UpdateChar()
+local function UpdateChar(): boolean
     local char = LocalPlayer.Character
     if char then
         State.Character = char
@@ -207,11 +227,15 @@ local function EnableGodMode()
         Camera.CameraSubject = newHum
         newHum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
         local animate = char:FindFirstChild("Animate")
-        if animate then animate.Disabled = true; task.wait(0.1); animate.Disabled = false end
+        if animate then 
+            animate.Disabled = true 
+            task.wait(0.1) 
+            animate.Disabled = false 
+        end
     end)
 end
 
-local function InstantTP(cf)
+local function InstantTP(cf: CFrame)
     if State.Root then
         State.Root.Velocity = Vector3.zero
         State.Root.CFrame = cf
@@ -229,7 +253,7 @@ local function Farm()
                 StatusLbl.TextColor3 = Color3.fromRGB(255, 80, 80)
                 
                 InstantTP(SellCFrame)
-                VirtualUser:ClickButton1(Vector2.new(0,0))
+                VirtualUser:ClickButton1(Vector2.zero)
                 task.wait(0.3)
                 return
             end
@@ -238,27 +262,27 @@ local function Farm()
             StatusLbl.Text = "Status: Hunting..."
             StatusLbl.TextColor3 = Color3.fromRGB(100, 255, 100)
             
-            local myPos = State.Root.Position
-            local target = nil
-            local minSq = 99999999
+            local myPos: Vector3 = State.Root.Position
+            local target: TargetData? = nil
+            local minSq: number = math.huge
             
-            for _, reg in ipairs(Cache.Registers) do
-                if reg.Parent and reg:FindFirstChild("Open") then
-                    local distSq = (myPos - reg.Open.Position).Magnitude
-                    if distSq < minSq then
-                        minSq = distSq
-                        target = {Obj = reg, Type = "Reg", Part = reg.Open}
-                    end
+            for _, reg in Cache.Registers do
+                if not (reg.Parent and reg:FindFirstChild("Open")) then continue end
+                
+                local distSq = (myPos - reg.Open.Position).Magnitude
+                if distSq < minSq then
+                    minSq = distSq
+                    target = {Obj = reg, Type = "Reg", Part = reg.Open}
                 end
             end
             
-            for _, safe in ipairs(Cache.Safes) do
-                if safe.Parent and safe:FindFirstChild("Safe") and safe:FindFirstChild("Amount") and safe.Amount.Value > 0 then
-                    local distSq = (myPos - safe.Safe.Position).Magnitude
-                    if distSq < minSq then
-                        minSq = distSq
-                        target = {Obj = safe, Type = "Safe", Part = safe.Safe}
-                    end
+            for _, safe in Cache.Safes do
+                if not (safe.Parent and safe:FindFirstChild("Safe") and safe:FindFirstChild("Amount") and safe.Amount.Value > 0) then continue end
+                
+                local distSq = (myPos - safe.Safe.Position).Magnitude
+                if distSq < minSq then
+                    minSq = distSq
+                    target = {Obj = safe, Type = "Safe", Part = safe.Safe}
                 end
             end
             
@@ -273,11 +297,13 @@ local function Farm()
                         Active = true
                     })
                 else
-                    if target.Obj:FindFirstChild("Open") and target.Obj.Open.Value then
+                    local openVal = target.Obj:FindFirstChild("Open")
+                    if openVal and openVal.Value then
                         RobEvent:FireServer("Safe", target.Obj)
                     else
-                        if target.Obj:FindFirstChild("OpenSafe") then
-                            target.Obj.OpenSafe:FireServer("Completed")
+                        local openSafe = target.Obj:FindFirstChild("OpenSafe")
+                        if openSafe then
+                            openSafe:FireServer("Completed")
                         end
                         RobEvent:FireServer("Safe", target.Obj)
                     end
@@ -325,17 +351,20 @@ task.spawn(function()
             local s = math.floor(now % 60)
             TimeLbl.Text = string.format("Time: %02d:%02d", m, s)
         end
-        FPSLbl.Text = "FPS: " .. math.floor(1 / RunService.RenderStepped:Wait())
+        
+        local fps = math.floor(1 / RunService.RenderStepped:Wait())
+        FPSLbl.Text = `FPS: {fps}`
         
         pcall(function()
-             PingLbl.Text = "Ping: " .. math.floor(StatsService.Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms"
+             local ping = math.floor(StatsService.Network.ServerStatsItem["Data Ping"]:GetValue())
+             PingLbl.Text = `Ping: {ping}ms`
         end)
     end
 end)
 
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
+    VirtualUser:ClickButton2(Vector2.zero)
 end)
 
 LocalPlayer.CharacterAdded:Connect(function()
